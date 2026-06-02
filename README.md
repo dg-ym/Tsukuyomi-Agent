@@ -170,7 +170,17 @@ frontend/
     ├── login.vue / register.vue
     └── index.vue
 ```
-
+## 🌐 页面展示
+---index页面
+![image](index.png)
+---chat页面
+![image](chat.png)
+---per_database页面
+![image](per_database.png)
+---mine页面
+![image](mine.png)
+---register页面
+![image](register.png)
 ---
 
 ## 🙏 致谢
