@@ -1,0 +1,16 @@
+{
+	"pages": [
+		{"path": "pages/index"},
+		{"path": "pages/login"},
+		{"path": "pages/register"},
+		{"path": "pages/chat"},
+		{"path": "pages/reset-psw"},
+		{"path": "pages/per_database"},
+		{"path": "pages/main"},
+		{"path": "pages/news"}
+	],
+	"globalStyle": {
+		"navigationStyle":"custom"
+	},
+	"uniIdRouter": {}
+}
