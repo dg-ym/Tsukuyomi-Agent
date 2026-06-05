@@ -14,3 +14,7 @@ MAIL_SSL_TLS=False
 JWT_SECRET_KEY = "密钥"
 JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=15)
 JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+
+# 文件上传配置
+UPLOAD_DIR = "uploads"                       # 原文件存储目录
+MAX_UPLOAD_SIZE = 20 * 1024 * 1024           # 单文件最大 20MB

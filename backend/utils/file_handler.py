@@ -8,47 +8,68 @@ from langchain_community.document_loaders import (
 
 
 def pdf_loader(filepath: str, passwd=None) -> list[Document]:
-    """PDF 加载：文字提取 → 不足时 OCR 扫描件"""
-    # 1. 尝试 PyMuPDFLoader
+    """PDF 加载：文字提取 + 图片 OCR（图文混排也不漏）"""
+    docs = []
+
+    # 1. 文字提取
     try:
         docs = PyMuPDFLoader(filepath).load()
-        text = ''.join(d.page_content for d in docs)
-        if len(text.strip()) > 50:
-            return docs
     except Exception:
         pass
 
-    # 2. 回退 PyPDFLoader
-    docs = PyPDFLoader(filepath, passwd).load()
-    text = ''.join(d.page_content for d in docs)
-    if len(text.strip()) > 50:
-        return docs
+    if not docs:
+        try:
+            docs = PyPDFLoader(filepath, passwd).load()
+        except Exception:
+            pass
 
-    # 3. 文字不足，OCR 扫描件 PDF
+    # 2. OCR 每页图片中的文字（图文混排也不漏）
+    ocr_texts = _ocr_pdf_images(filepath)
+    if ocr_texts:
+        # 将 OCR 结果追加到对应页
+        if docs:
+            for i, ocr_text in enumerate(ocr_texts):
+                if i < len(docs) and ocr_text.strip():
+                    docs[i].page_content += "\n[图片文字] " + ocr_text
+        else:
+            # 纯扫描件，只有 OCR 结果
+            for i, ocr_text in enumerate(ocr_texts):
+                if ocr_text.strip():
+                    docs.append(Document(
+                        page_content=ocr_text,
+                        metadata={"source": filepath, "page": i + 1}
+                    ))
+
+    if not docs:
+        return []
+
+    text = ''.join(d.page_content for d in docs)
+    if len(text.strip()) > 20:
+        return docs
+    return []
+
+
+def _ocr_pdf_images(filepath: str) -> list[str]:
+    """对 PDF 每页做 OCR，返回每页识别文字列表"""
     try:
         import fitz
         from rapidocr_onnxruntime import RapidOCR
         ocr = RapidOCR()
-        result_docs = []
+        results = []
         with fitz.open(filepath) as pdf:
-            for page_num, page in enumerate(pdf):
+            for page in pdf:
                 pix = page.get_pixmap(dpi=200)
                 img_bytes = pix.tobytes("png")
                 ocr_result, _ = ocr(img_bytes)
                 if ocr_result:
                     text = '\n'.join(line[1] for line in ocr_result if line[1])
-                    result_docs.append(Document(
-                        page_content=text,
-                        metadata={"source": filepath, "page": page_num + 1}
-                    ))
-        if result_docs:
-            logger.info(f"[OCR] 识别 PDF {filepath} 共 {len(result_docs)} 页")
-            return result_docs
+                    results.append(text)
+                else:
+                    results.append("")
+        return results
     except Exception as e:
-        logger.warning(f"[OCR] PDF OCR 失败: {e}")
-
-    # 4. 全部失败，返回空
-    return []
+        logger.warning(f"[OCR] PDF 图片 OCR 失败: {e}")
+        return []
 
 
 def txt_loader(filepath: str) -> list[Document]:

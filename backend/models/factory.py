@@ -14,7 +14,11 @@ class BaseModelFactory(ABC):
 
 class ChatModelFactory(BaseModelFactory):
     def generator(self) -> Optional[Embeddings | BaseChatModel]:
-        return ChatTongyi(model=rag_conf["chat_model_name"], streaming=True)
+        return ChatTongyi(
+            model=rag_conf["chat_model_name"],
+            streaming=True,
+            request_timeout=60,  # 单次 API 调用超时 60 秒
+        )
 
 
 class EmbeddingsFactory(BaseModelFactory):

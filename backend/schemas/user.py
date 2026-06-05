@@ -36,13 +36,19 @@ class UserSchema(BaseModel):
 class LoginOut(BaseModel):
     user: UserSchema
     token: str
+    refresh_token: str
+
+class RefreshIn(BaseModel):
+    refresh_token: str
+
+class RefreshOut(BaseModel):
+    token: str
+    refresh_token: str
 
 class UserResetSchema(BaseModel):
     email: EmailStr
     code: Annotated[str,Field(min_length=4,max_length=4,description="邮箱验证码")]
     password: PasswordStr
-
-
 
 
 class UserProfileOut(BaseModel):

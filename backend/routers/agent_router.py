@@ -1,11 +1,9 @@
 import json
-import asyncio
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query, Security, HTTPException, Body
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from typing import Optional
-
 from models import AsyncSessionFactory
 from core.auth import AuthHandler
 from agent.react_agent import ReactAgent
@@ -84,11 +82,12 @@ async def sse_generator(query: str, user_id: int, session_id: int | None):
 
         # 3. 流式输出
         full_response = ""
-        for event in agent.execute_stream(query, context_messages=context_messages):
-            if event["type"] in ("content", "text"):
+        async for event in agent.execute_stream(query, context_messages=context_messages):
+            if event.get("type") == "clear":
+                full_response = ""  # 工具间过渡文本已回撤
+            elif event["type"] in ("content", "text"):
                 full_response += event["data"]
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
-            await asyncio.sleep(0)
 
         # 4. 保存 AI 回复到 MySQL + Redis + ChromaDB
         if full_response.strip():
@@ -129,8 +128,9 @@ async def agent_chat_sync(
     user_id: str = Depends(get_current_user_id)
 ):
     """非流式对话 - 一次性返回完整回复"""
+    current_user_id.set(int(user_id))
     full_response = ""
-    for event in agent.execute_stream(req.query):
+    async for event in agent.execute_stream(req.query):
         if event["type"] in ("content", "text"):
             full_response += event["data"]
     return {"code": 100, "data": full_response}
@@ -145,10 +145,11 @@ async def agent_chat_ws(
     """WebSocket 流式对话"""
     try:
         user_id = auth_handler.decode_access_token(token)
-    except Exception:
-        await websocket.close(code=4001, reason="Token 无效或已过期")
+    except HTTPException:
+        await websocket.close(code=401, reason="Token 无效或已过期")
         return
 
+    current_user_id.set(int(user_id))
     await websocket.accept()
 
     try:
@@ -161,16 +162,17 @@ async def agent_chat_ws(
                 await websocket.send_json({"error": "query 不能为空"})
                 continue
 
-            for event in agent.execute_stream(query):
+            async for event in agent.execute_stream(query):
                 await websocket.send_json(event)
 
             await websocket.send_json({"done": True})
 
     except WebSocketDisconnect:
         pass
-    except Exception as e:
+    except Exception:
+        print(f"[WebSocket] 用户 {user_id} 连接异常断开")
         try:
-            await websocket.send_json({"error": str(e)})
+            await websocket.send_json({"error": "内部错误，请重试"})
         except Exception:
             pass
 

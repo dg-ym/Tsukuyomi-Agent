@@ -45,8 +45,9 @@
       <el-table-column label="上传时间" width="180" align="center">
         <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="160" align="center">
+      <el-table-column label="操作" width="200" align="center">
         <template #default="{ row }">
+          <el-button size="small" type="success" link @click="previewDoc(row)">预览</el-button>
           <el-button size="small" type="primary" link @click="startRename(row)">重命名</el-button>
           <el-popconfirm title="确定删除？" @confirm="doDelete(row)">
             <template #reference>
@@ -60,6 +61,13 @@
     <div v-if="!uploading && docList.length === 0" class="kb-empty">
       还没有上传任何文档
     </div>
+
+    <!-- 预览弹窗 -->
+    <el-dialog v-model="previewVisible" :title="previewTitle" width="80%" top="2vh">
+      <div v-if="previewLoading" class="kb-loading">加载中...</div>
+      <div v-else-if="previewType === 'text'" class="preview-text">{{ previewContent }}</div>
+      <div v-else class="preview-tip">{{ previewMsg }}</div>
+    </el-dialog>
   </div>
 </template>
 
@@ -72,6 +80,14 @@ const docList = ref([])
 const uploading = ref(false)
 const renamingId = ref(null)
 const renameText = ref('')
+
+// 预览
+const previewVisible = ref(false)
+const previewLoading = ref(false)
+const previewTitle = ref('')
+const previewType = ref('')
+const previewContent = ref('')
+const previewMsg = ref('')
 
 const pageSize = ref(10)
 const currentPage = ref(1)
@@ -118,17 +134,42 @@ const doUpload = async (file) => {
       headers: authHeader,
       body: form,
     })
-    const data = await res.json()
     if (res.ok) {
       ElMessage.success('上传成功')
       loadDocuments()
     } else {
-      ElMessage.error(data.detail || '上传失败')
+      ElMessage.error('上传失败！')
     }
   } catch {
-    ElMessage.error('上传失败')
+    ElMessage.error('上传失败！')
   } finally {
     uploading.value = false
+  }
+}
+
+const previewDoc = async (row) => {
+  previewVisible.value = true
+  previewTitle.value = row.filename
+  previewLoading.value = true
+  previewContent.value = ''
+  previewMsg.value = ''
+  try {
+    const res = await fetch(`${BASE_URL}/kb/documents/${row.id}/preview`, {
+      headers: { 'Content-Type': 'application/json', ...authHeader },
+    })
+    const data = await res.json()
+    if (data.preview) {
+      previewType.value = 'text'
+      previewContent.value = data.content
+    } else {
+      previewType.value = 'tip'
+      previewMsg.value = data.message || '不支持预览'
+    }
+  } catch {
+    previewType.value = 'tip'
+    previewMsg.value = '加载失败'
+  } finally {
+    previewLoading.value = false
   }
 }
 
@@ -241,6 +282,25 @@ onMounted(() => loadDocuments())
   justify-content: center;
   color: #999;
   font-size: 15px;
+}
+
+.preview-text {
+  white-space: pre-wrap;
+  font-family: Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 6px;
+}
+
+.preview-tip {
+  color: #999;
+  font-size: 15px;
+  text-align: center;
+  padding: 40px 0;
 }
 
 

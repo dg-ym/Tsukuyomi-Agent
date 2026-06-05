@@ -83,8 +83,15 @@
               </div>
             </div>
             <div class="content">
-              <span v-if="message.loading && !message.content" class="typing-indicator"><i></i><i></i><i></i></span>
+              <!-- 思考中：工具调用阶段 -->
+              <div v-if="message.loading && !message.content" class="thinking-indicator">
+                <span class="thinking-text">思考中</span>
+                <span class="thinking-dots"><i></i><i></i><i></i></span>
+              </div>
+              <!-- 流式回答 -->
               <div v-if="message.content" class="markdown-body" v-html="renderMarkdown(message.content)"></div>
+              <!-- 回答完成后显示 loading dots（持续流式写入中） -->
+              <span v-if="message.loading && message.content" class="continuing-dot">●</span>
             </div>
           </div>
         </div>
@@ -338,9 +345,28 @@ const sendMessage = async () => {
             continue
           }
 
+          // 清除试流内容（工具间过渡文本回撤）
+          if (data.type === 'clear') {
+            const m = currentConversation.value.messages[msgIndex]
+            m.content = ''
+            m.loading = true
+            await nextTick(scrollToBottom)
+            continue
+          }
+
           // 工具调用：显示加载动画
           if (data.type === 'tool') {
-            currentConversation.value.messages[msgIndex].loading = true
+            const m = currentConversation.value.messages[msgIndex]
+            m.loading = true
+            await nextTick(scrollToBottom)
+            continue
+          }
+
+          // 错误：后端返回错误信息
+          if (data.type === 'error') {
+            const m = currentConversation.value.messages[msgIndex]
+            m.content = data.data || '请求失败，请稍后重试'
+            m.loading = false
             await nextTick(scrollToBottom)
             continue
           }
@@ -357,7 +383,12 @@ const sendMessage = async () => {
     }
 
     // 流结束
-    currentConversation.value.messages[msgIndex].loading = false
+    const finalMsg = currentConversation.value.messages[msgIndex]
+    finalMsg.loading = false
+    // 兜底：流结束但无内容 → 说明 LLM 调用失败
+    if (!finalMsg.content) {
+      finalMsg.content = '模型暂时无法响应，请稍后重试'
+    }
   } catch (error) {
     currentConversation.value.messages[msgIndex].content = '请求失败，请稍后重试'
     console.error('sendMessage error:', error)
@@ -388,8 +419,7 @@ const handleUpload = () => {
       if (res.ok) {
         ElMessage.success('文件已上传至知识库')
       } else {
-        const data = await res.json().catch(() => ({}))
-        ElMessage.error(data.detail || '上传失败')
+        ElMessage.error('上传失败！')
       }
     } catch {
       ElMessage.error('上传失败')
@@ -712,6 +742,8 @@ onUnmounted(() => {
   max-width: 80%;
   font-size: 16px; /* 增加字体大小 */
   line-height: 1.8; /* 增加行高 */
+  user-select: text;
+  cursor: auto;
 }
 
 .message.user {
@@ -859,12 +891,42 @@ input::placeholder {
   width: 100%;
 }
 
-/* 加载动画三点 */
-.typing-indicator { display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; }
-.typing-indicator i { width: 6px; height: 6px; background: #999; border-radius: 50%; animation: typing-bounce 1.2s infinite; }
-.typing-indicator i:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator i:nth-child(3) { animation-delay: 0.4s; }
-@keyframes typing-bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+/* 思考中加载动画 */
+.thinking-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  color: #888;
+  font-size: 15px;
+}
+.thinking-text {
+  font-weight: 500;
+}
+.thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.thinking-dots i {
+  width: 5px;
+  height: 5px;
+  background: #0069e0;
+  border-radius: 50%;
+  animation: dot-pulse 1.2s infinite ease-in-out;
+}
+.thinking-dots i:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot-pulse { 0%,60%,100% { transform: scale(0.6); opacity: 0.4; } 30% { transform: scale(1); opacity: 1; } }
+
+/* 流式输出中的闪烁光标 */
+.continuing-dot {
+  color: #0069e0;
+  font-size: 18px;
+  animation: blink 0.8s infinite;
+  margin-left: 2px;
+}
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
 
 /* Markdown 渲染样式 */
 .markdown-body :deep(p) { margin: 0 0 8px; line-height: 1.7; }
