@@ -8,7 +8,7 @@
 
 - 🤖 **ReAct Agent** — 自主思考 → 工具调用 → 观察结果 → 生成回答
 - 📚 **RAG 知识库** — HyDE + BM25 + RRF 融合 + DashScope 云端精排 + PDF 全文 OCR
-- 🔍 **联网搜索** — Bing 实时搜索（`curl_cffi` TLS 指纹模拟）+ 中文关键词提取
+- 🔍 **联网搜索** — Bing 实时搜索（`curl_cffi` TLS 指纹模拟）
 - 📄 **多格式文档** — txt / pdf / csv / docx / xlsx，PDF 支持 PyMuPDF + RapidOCR（含图文混排）
 - 👤 **多用户隔离** — ContextVar 透明注入 user_id，Agent 层无感知
 - 💬 **流式对话** — SSE 实时流式输出
