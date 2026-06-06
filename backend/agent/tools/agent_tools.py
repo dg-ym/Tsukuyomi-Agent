@@ -1,10 +1,17 @@
+import time
+from curl_cffi import requests as curl_requests
 import json
 import datetime
 from utils.logger_handler import logger
 from langchain_core.tools import tool
+from urllib.parse import quote_plus
 import urllib.request
 import urllib.error
-
+import asyncio
+from models import AsyncSessionFactory
+from respository.chat_history_repo import SessionRepository, MessageRepository
+from models.user_file import UserDocument
+from sqlalchemy import select, func
 from rag.rag_service import RagSummarizeService
 from utils.context_vars import current_user_id
 
@@ -27,7 +34,7 @@ def rag_summarize(query: str) -> str:
 def get_weather(city: str) -> str:
     """调用 wttr.in 免费天气 API"""
     try:
-        url = f"https://wttr.in/{urllib.request.quote(city)}?format=j1&lang=zh"
+        url = f"https://wttr.in/{quote_plus(city)}?format=j1&lang=zh"
         req = urllib.request.Request(url, headers={"User-Agent": "curl/8.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
@@ -93,11 +100,6 @@ def get_user_location() -> str:
 @tool(description="获取当前用户的对话使用统计数据（会话数、消息数、知识库文档数）")
 def fetch_external_data() -> str:
     """查询当前用户的真实使用数据"""
-    import asyncio
-    from models import AsyncSessionFactory
-    from respository.chat_history_repo import SessionRepository, MessageRepository
-    from models.user_file import UserDocument
-    from sqlalchemy import select, func
 
     async def _query():
         uid = current_user_id.get()
@@ -139,16 +141,9 @@ def fetch_external_data() -> str:
 
 @tool(description="联网搜索最新信息。当模型自身知识和知识库都无法回答时调用")
 def web_search(query: str) -> str:
-    """使用 Bing 搜索，提取核心关键词搜索"""
-    import time, re
-    from curl_cffi import requests as curl_requests
+    """使用 Bing 搜索，curl_cffi 模拟 Chrome TLS 指纹绕过反爬"""
 
-    # 提取最长中文词作为核心搜索词
-    keywords = re.findall(r'[\u4e00-\u9fff]{2,}', query)
-    core = max(keywords, key=len) if keywords else query
-    logger.info(f"[web_search] query='{query}' -> core='{core}'")
-
-    url = f"https://cn.bing.com/search?q={urllib.request.quote(core)}&setlang=zh-cn"
+    url = f"https://cn.bing.com/search?q={quote_plus(query)}&setlang=zh-cn"
 
     for attempt in range(2):
         try:
@@ -174,7 +169,7 @@ def web_search(query: str) -> str:
                         seen.add(title)
                         results.append({"title": title, "body": body, "href": href})
 
-            logger.info(f"[web_search] '{core}' -> {len(results)} 条")
+            logger.info(f"[web_search] '{query}' -> {len(results)} 条")
 
             if not results:
                 return "未搜索到相关信息"
@@ -185,7 +180,7 @@ def web_search(query: str) -> str:
             )
 
         except Exception as e:
-            logger.error(f"[web_search] '{core}' attempt {attempt+1}: {e}")
+            logger.error(f"[web_search] '{query}' attempt {attempt+1}: {e}")
             if attempt < 1:
                 time.sleep(1)
             else:
