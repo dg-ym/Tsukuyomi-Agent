@@ -81,7 +81,41 @@ def csv_loader(filepath: str) -> list[Document]:
 
 
 def docx_loader(filepath: str) -> list[Document]:
-    return Docx2txtLoader(filepath).load()
+    """DOCX 加载：文字提取 + 内嵌图片 OCR"""
+    docs = Docx2txtLoader(filepath).load()
+    ocr_text = _ocr_docx_images(filepath)
+    if ocr_text and docs:
+        docs[0].page_content += "\n[图片文字] " + ocr_text
+    elif ocr_text:
+        docs = [Document(page_content=ocr_text, metadata={"source": filepath})]
+    return docs
+
+
+def _ocr_docx_images(filepath: str) -> str:
+    """提取 DOCX 中的内嵌图片并 OCR"""
+    try:
+        import zipfile
+        from rapidocr_onnxruntime import RapidOCR
+        ocr = RapidOCR()
+        all_text = []
+
+        with zipfile.ZipFile(filepath, "r") as z:
+            # DOCX 图片存储在 word/media/ 目录下
+            for name in z.namelist():
+                if name.startswith("word/media/") and name.lower().endswith(
+                    (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".webp")
+                ):
+                    img_bytes = z.read(name)
+                    ocr_result, _ = ocr(img_bytes)
+                    if ocr_result:
+                        text = '\n'.join(line[1] for line in ocr_result if line[1])
+                        if text.strip():
+                            all_text.append(text)
+
+        return "\n".join(all_text) if all_text else ""
+    except Exception as e:
+        logger.warning(f"[OCR] DOCX 图片 OCR 失败: {e}")
+        return ""
 
 
 def xlsx_loader(filepath: str) -> list[Document]:

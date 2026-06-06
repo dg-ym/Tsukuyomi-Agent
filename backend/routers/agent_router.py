@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query, Security, HTTPException, Body
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Query, Security, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
@@ -14,6 +14,7 @@ from utils.cache_service import (
     get_cached_messages, cache_chat_messages, push_single_message,
     store_chat_to_chroma,
 )
+from rag.rag_service import RagSummarizeService
 
 auth_handler = AuthHandler()
 
@@ -63,7 +64,9 @@ async def sse_generator(query: str, user_id: int, session_id: int | None):
 
         # 2. 加载上下文：Redis 优先 → MySQL 兜底
         context_messages = None
+        total_msg_count = 0
         if session_id is not None:
+            total_msg_count = await message_repo.count_by_session_id(session_id)
             cached = await get_cached_messages(session_id)
             if cached and len(cached) > 1:
                 # Redis 命中，去掉最后一条（当前用户消息）
@@ -79,6 +82,20 @@ async def sse_generator(query: str, user_id: int, session_id: int | None):
                 if previous:
                     await cache_chat_messages(session_id, context_messages)
                 print(f"[MEMORY] MySQL 加载 {len(previous)} 条, 传入 {len(context_messages)} 条")
+
+            # 如果总消息数超过 20 条，用 LLM 摘要更早的历史补充上下文
+            if total_msg_count > 20:
+                all_msgs = await message_repo.get_by_session_id(session_id)
+                older = all_msgs[: -20]  # 20 条之前的旧消息
+                old_dicts = [{"role": m.role, "content": m.content} for m in older]
+                summary_svc = RagSummarizeService()
+                summary = summary_svc.summarize_history(old_dicts)
+                if summary:
+                    context_messages.insert(0, {
+                        "role": "user",
+                        "content": f"[历史对话摘要] {summary}"
+                    })
+                    print(f"[MEMORY] 注入早期 {len(old_dicts)} 条消息的摘要（{len(summary)} 字）")
 
         # 3. 流式输出
         full_response = ""

@@ -1,5 +1,4 @@
 import os
-import shutil
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
@@ -209,6 +208,36 @@ async def preview_document(
             "filename": doc.filename,
             "message": f"该文件类型（.{doc.file_type}）暂不支持在线预览，请下载后查看"
         }
+    finally:
+        await db.close()
+
+
+@router.get("/documents/{doc_id}/download")
+async def download_document(
+    doc_id: int,
+    user_id: str = Depends(get_current_user_id)
+):
+    """下载文档原文件"""
+    from fastapi.responses import FileResponse
+
+    db = AsyncSessionFactory()
+    try:
+        doc = await db.scalar(
+            select(UserDocument)
+            .where(UserDocument.id == doc_id, UserDocument.user_id == int(user_id))
+        )
+        if not doc:
+            raise HTTPException(404, detail="文档不存在")
+
+        disk_path = os.path.join(settings.UPLOAD_DIR, doc.file_path)
+        if not os.path.exists(disk_path):
+            raise HTTPException(404, detail="文件不存在")
+
+        return FileResponse(
+            path=disk_path,
+            filename=doc.filename,
+            media_type="application/octet-stream",
+        )
     finally:
         await db.close()
 

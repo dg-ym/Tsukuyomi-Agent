@@ -1,5 +1,6 @@
 """
-高级检索管线：HyDE + BM25 + 云端 Rerank 精排
+高级检索管线：HyDE + BM25 → RRF 融合 → DashScope Rerank 精排
+ChromaDB 数据丢失时自动从 MySQL + 磁盘重建
 """
 import os
 import json
@@ -14,6 +15,9 @@ from langchain_core.prompts import PromptTemplate
 from utils.logger_handler import logger
 from utils.config_handler import rag_conf
 from models.factory import chat_model, embed_model
+from models.user_file import UserDocument
+from sqlalchemy import select
+import settings
 import urllib.request
 
 # HyDE 提示词
@@ -131,6 +135,45 @@ class AdvancedRetriever:
         top_indices = np.argsort(scores)[-k:][::-1]
         return [documents[i] for i in top_indices if scores[i] > 0]
 
+    def _rebuild_from_disk(self, user_id: int) -> int:
+        """ChromaDB 数据丢失时，从 MySQL + 磁盘重建向量库"""
+        try:
+            import asyncio
+            from models import AsyncSessionFactory
+
+            async def _query_docs():
+                db = AsyncSessionFactory()
+                try:
+                    result = await db.scalars(
+                        select(UserDocument).where(UserDocument.user_id == user_id)
+                    )
+                    return list(result.all())
+                finally:
+                    await db.close()
+
+            docs = asyncio.run(_query_docs())
+            if not docs:
+                return 0
+
+            total = 0
+            for doc in docs:
+                disk_path = os.path.join(settings.UPLOAD_DIR, doc.file_path)
+                if not os.path.exists(disk_path):
+                    logger.warning(f"[重建] 文件不存在: {disk_path}")
+                    continue
+                with open(disk_path, "rb") as f:
+                    content = f.read()
+                count = self.vector_store.load_from_content(
+                    user_id, content, doc.filename, doc.md5_hash
+                )
+                total += count
+
+            logger.info(f"[重建] user={user_id} 从磁盘重建 {len(docs)} 个文件，{total} 个分片")
+            return total
+        except Exception as e:
+            logger.error(f"[重建] user={user_id} 失败: {e}")
+            return 0
+
     def retrieve(self, query: str, user_id: int, final_k: int = 3) -> list[Document]:
         logger.info(f"[高级检索] query={query[:50]}... user={user_id}")
 
@@ -139,6 +182,15 @@ class AdvancedRetriever:
 
         keyword_docs = self._keyword_search(query, user_id, k=10)
         logger.info(f"[高级检索] 关键词召回 {len(keyword_docs)} 条")
+
+        # 两条路径都空 → ChromaDB 数据丢失，从 MySQL + 磁盘重建后重试
+        if not semantic_docs and not keyword_docs:
+            logger.warning(f"[高级检索] ChromaDB 无数据，尝试从磁盘重建...")
+            rebuilt = self._rebuild_from_disk(user_id)
+            if rebuilt > 0:
+                semantic_docs = self._semantic_search(query, user_id, k=10)
+                keyword_docs = self._keyword_search(query, user_id, k=10)
+                logger.info(f"[高级检索] 重建后语义 {len(semantic_docs)} 条，关键词 {len(keyword_docs)} 条")
 
         fused = _reciprocal_rank_fusion([semantic_docs, keyword_docs])
         logger.info(f"[高级检索] 融合后 {len(fused)} 条")

@@ -72,3 +72,13 @@ class MessageRepository:
                 .order_by(ChatMessage.create_time.asc())
             )
             return list(result.all())
+
+    async def count_by_session_id(self, session_id: int) -> int:
+        """获取会话消息总数"""
+        from sqlalchemy import func
+        async with self.session.begin():
+            result = await self.session.scalar(
+                select(func.count()).select_from(ChatMessage)
+                .where(ChatMessage.session_id == session_id)
+            )
+            return result or 0

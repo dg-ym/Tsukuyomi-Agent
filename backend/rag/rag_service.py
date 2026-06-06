@@ -46,3 +46,28 @@ class RagSummarizeService(object):
             "input": query,
             "context": context
         })
+
+    def summarize_history(self, messages: list[dict]) -> str:
+        """对较早的历史消息做摘要，超过 20 条时注入上下文"""
+        if not messages:
+            return ""
+
+        # 拼接对话记录
+        history_text = ""
+        for m in messages:
+            role = "用户" if m["role"] == "user" else "助手"
+            history_text += f"{role}: {m['content']}\n"
+
+        prompt = (
+            "你是一个对话摘要助手。请用 100-200 字简要总结以下历史对话的核心内容，"
+            "保留关键事实、用户偏好和重要结论，忽略问候语和客套话。\n\n"
+            f"对话记录:\n{history_text}\n\n摘要:"
+        )
+
+        try:
+            from langchain_core.output_parsers import StrOutputParser
+            from langchain_core.prompts import PromptTemplate
+            chain = PromptTemplate.from_template(prompt) | self.model | StrOutputParser()
+            return chain.invoke({})
+        except Exception as e:
+            return f"(历史摘要生成失败: {e})"

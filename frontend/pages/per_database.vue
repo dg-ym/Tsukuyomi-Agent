@@ -45,9 +45,10 @@
       <el-table-column label="上传时间" width="180" align="center">
         <template #default="{ row }">{{ formatTime(row.create_time) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="200" align="center">
+      <el-table-column label="操作" width="240" align="center">
         <template #default="{ row }">
           <el-button size="small" type="success" link @click="previewDoc(row)">预览</el-button>
+          <el-button size="small" type="warning" link @click="downloadFile(row)">下载</el-button>
           <el-button size="small" type="primary" link @click="startRename(row)">重命名</el-button>
           <el-popconfirm title="确定删除？" @confirm="doDelete(row)">
             <template #reference>
@@ -66,7 +67,10 @@
     <el-dialog v-model="previewVisible" :title="previewTitle" width="80%" top="2vh">
       <div v-if="previewLoading" class="kb-loading">加载中...</div>
       <div v-else-if="previewType === 'text'" class="preview-text">{{ previewContent }}</div>
-      <div v-else class="preview-tip">{{ previewMsg }}</div>
+      <div v-else class="preview-tip">
+        <p>{{ previewMsg }}</p>
+        <el-button type="primary" @click="downloadFile(previewRow)">下载文件</el-button>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -88,6 +92,7 @@ const previewTitle = ref('')
 const previewType = ref('')
 const previewContent = ref('')
 const previewMsg = ref('')
+const previewRow = ref(null)  // 当前预览的文档行
 
 const pageSize = ref(10)
 const currentPage = ref(1)
@@ -148,6 +153,7 @@ const doUpload = async (file) => {
 }
 
 const previewDoc = async (row) => {
+  previewRow.value = row
   previewVisible.value = true
   previewTitle.value = row.filename
   previewLoading.value = true
@@ -170,6 +176,25 @@ const previewDoc = async (row) => {
     previewMsg.value = '加载失败'
   } finally {
     previewLoading.value = false
+  }
+}
+
+const downloadFile = async (row) => {
+  if (!row) return
+  try {
+    const res = await fetch(`${BASE_URL}/kb/documents/${row.id}/download`, {
+      headers: authHeader,
+    })
+    if (!res.ok) throw new Error()
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = row.filename
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch {
+    ElMessage.error('下载失败')
   }
 }
 
