@@ -1,25 +1,25 @@
-# 🌙 月読 (Tsukuyomi) — AI 智能助手
+#  洛书 — AI 智能助手
 
 基于 **LangChain ReAct Agent + RAG 检索增强** 的智能对话系统，支持多用户知识库、联网搜索、工具调用，提供类 ChatGPT 的流式对话体验。
 
 ---
 
-## ✨ 核心特性
+##  核心特性
 
-- 🤖 **ReAct Agent** — 自主思考 → 工具调用 → 观察结果 → 生成回答
-- 📚 **RAG 知识库** — HyDE + BM25 + RRF 融合 + DashScope 云端精排 + PDF 全文 OCR
-- 🔍 **联网搜索** — Bing 实时搜索（`curl_cffi` TLS 指纹模拟）
-- 📄 **多格式文档** — txt / pdf / csv / docx / xlsx，PDF 支持 PyMuPDF + RapidOCR（含图文混排）
-- 👤 **多用户隔离** — ContextVar 透明注入 user_id，Agent 层无感知
-- 💬 **流式对话** — SSE 实时流式输出
-- 📝 **Markdown 渲染** — 回复支持标题、列表、引用、链接，可选择复制
-- 🗄️ **四层存储** — MySQL（元数据）+ 磁盘（原文件备份）+ Redis（滑动窗口 20 条）+ ChromaDB（向量）
-- 🔐 **JWT 双 Token + Rotation** — Access Token + Refresh Token 轮换 + Redis 三态标记重用检测
-- 📋 **文档在线预览** — 文本类文档直接预览，二进制文件提示下载
+-  **ReAct Agent** — 自主思考 → 工具调用 → 观察结果 → 生成回答
+-  **RAG 知识库** — HyDE + BM25 + RRF 融合 + DashScope 云端精排 + PDF 全文 OCR
+-  **联网搜索** — Bing 实时搜索（`curl_cffi` TLS 指纹模拟）
+-  **多格式文档** — txt / pdf / csv / docx / xlsx，PDF 支持 PyMuPDF + RapidOCR（含图文混排）
+-  **多用户隔离** — ContextVar 透明注入 user_id，Agent 层无感知
+-  **流式对话** — SSE 实时流式输出
+-  **Markdown 渲染** — 回复支持标题、列表、引用、链接，可选择复制
+-  **四层存储** — MySQL（元数据）+ 磁盘（原文件备份）+ Redis（滑动窗口 20 条）+ ChromaDB（向量）
+-  **JWT 双 Token + Rotation** — Access Token + Refresh Token 轮换 + Redis 三态标记重用检测
+-  **文档在线预览** — 文本类文档直接预览，二进制文件提示下载
 
 ---
 
-## 🏗️ 技术架构
+##  技术架构
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -67,7 +67,7 @@
 
 ---
 
-## 🚀 快速启动
+##  快速启动
 
 ### 环境要求
 
@@ -106,7 +106,7 @@ npm run dev:h5
 
 ---
 
-## 📡 API 接口
+##  API 接口
 
 ### 用户 /user
 
@@ -144,7 +144,7 @@ npm run dev:h5
 
 ---
 
-## 📂 项目结构
+##  项目结构
 
 ```
 backend/
@@ -166,7 +166,7 @@ backend/
 frontend/
 └── pages/                      # Vue 页面 (聊天、知识库、个人中心、登录)
 ```
-## 🌐 页面展示
+##  页面展示
 ---index页面
 ![image](index.png)
 ---chat页面
@@ -179,7 +179,7 @@ frontend/
 ![image](register.png)
 ---
 
-## 🔒 安全机制
+##  安全机制
 
 ### JWT 双 Token + Refresh Rotation
 
@@ -200,10 +200,10 @@ frontend/
 
 ---
 
-## 🙏 致谢
+##  致谢
 
 前端 UI 参考 [magic_conch_frontend](https://github.com/huangyf2013320506/magic_conch_frontend)，在此感谢。
 
-## 📄 License
+##  License
 
 MIT
