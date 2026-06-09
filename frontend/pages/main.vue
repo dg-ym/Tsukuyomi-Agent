@@ -15,7 +15,7 @@
       
       <el-scrollbar>
         <div class="top1-logo nav-logo" @click="toggleSidebar">
-          <img src="@/assets/images/hailuo.png"/>
+          <img src="@/assets/images/luoshu.png"/>
         </div>
         
         <el-menu class="transparent-menu">

@@ -1,8 +1,7 @@
 <template>
   <view class="page-wrap">
     <view class="header">
-      <text class="title">月读</text>
-      <!-- <text class="sub-title">开启月读之旅</text> -->
+      <text class="title">洛书</text>
     </view>
 
     <view class="card">
@@ -241,19 +240,15 @@ const handleRegister = async () => {
     uni.showToast({ title: '注册成功', icon: 'success' })
     setTimeout(() => uni.redirectTo({ url: '/pages/login' }), 1500)
   } catch (e) {
-    // -------------- 核心修复：读取后端返回的 detail ----------
     let msg = "注册失败";
 
-    // 1. 优先取后端返回的错误详情（FastAPI 标准格式）
     if (e?.data?.detail) {
       msg = e.data.detail;
     } 
-    // 2. 兼容其他格式
     else if (e?.message) {
       msg = e.message;
     }
 
-    // 根据后端文字匹配提示
     if (msg === "该邮箱已存在！") {
       uni.showToast({ title: "注册失败，该邮箱已存在！", icon: "none" });
       error.email = true;
@@ -280,7 +275,7 @@ onUnmounted(() => timer && clearInterval(timer))
   background: linear-gradient(to bottom, #fff6ed, #ffffff);
   padding: 20rpx;
   box-sizing: border-box;
-  background: url('@/assets/images/backGround.png') no-repeat center center;
+  background: url('@/assets/images/backGround.jpg') no-repeat center center;
   background-size: cover; /* 这将确保图片覆盖整个区域且不变形 */
 }
 

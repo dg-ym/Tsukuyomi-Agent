@@ -8,7 +8,7 @@ from langchain_community.document_loaders import (
 
 
 def pdf_loader(filepath: str, passwd=None) -> list[Document]:
-    """PDF 加载：文字提取 + 图片 OCR（图文混排也不漏）"""
+    """PDF 加载：文字提取 + 图片 OCR"""
     docs = []
 
     # 1. 文字提取
@@ -23,7 +23,7 @@ def pdf_loader(filepath: str, passwd=None) -> list[Document]:
         except Exception:
             pass
 
-    # 2. OCR 每页图片中的文字（图文混排也不漏）
+    # 2. OCR 每页图片中的文字
     ocr_texts = _ocr_pdf_images(filepath)
     if ocr_texts:
         # 将 OCR 结果追加到对应页

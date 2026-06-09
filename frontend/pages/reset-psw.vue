@@ -2,7 +2,6 @@
   <view class="page-wrap">
     <view class="header">
       <text class="title">重置密码</text>
-      <!-- <text class="sub-title">开启月读之旅</text> -->
     </view>
 
     <view class="card">
@@ -240,7 +239,7 @@ onUnmounted(() => timer && clearInterval(timer))
   background: linear-gradient(to bottom, #fff6ed, #ffffff);
   padding: 20rpx;
   box-sizing: border-box;
-  background: url('@/assets/images/backGround.png') no-repeat center center;
+  background: url('@/assets/images/backGround.jpg') no-repeat center center;
   background-size: cover; /* 这将确保图片覆盖整个区域且不变形 */
 }
 

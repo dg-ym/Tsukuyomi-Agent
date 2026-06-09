@@ -1,7 +1,7 @@
 <template>
   <div class="login-page">
 	<div class="header">
-      <h2 class="main-title">月读</h2>
+      <h2 class="main-title">洛书</h2>
       <p class="sub-title">请登录您的账号</p>
     </div>
 
@@ -146,7 +146,7 @@ const goForgetPwd = () => {
   background: linear-gradient(to bottom, #fff, #ffefe0);
   padding: 20px;
   box-sizing: border-box;
-  background: url('@/assets/images/backGround.png') no-repeat center center;
+  background: url('@/assets/images/backGround.jpg') no-repeat center center;
   background-size: cover; /* 这将确保图片覆盖整个区域且不变形 */
 }
 

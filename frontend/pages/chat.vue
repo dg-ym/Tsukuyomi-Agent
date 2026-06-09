@@ -76,7 +76,7 @@
           <div v-for="(message, index) in currentConversation.messages" :key="index" :class="['message', message.role]">
             <div class="avatar">
               <div v-if="message.role !== 'user'" class="ai-avatar">
-                <img src="@/assets/images/hailuo2.png" alt="AI Avatar">
+                <img src="@/assets/images/agent.png" alt="AI Avatar">
               </div>
               <div v-else>
                 <img :src="userAvatar" alt="Me">
@@ -139,10 +139,6 @@
               </el-popover>
             </div>
           </div>
-        </div>
-
-        <div class="disclaimer">
-          https://www.bilibili.com/video/BV1NVFMz2Eka
         </div>
       </div>
     </div>

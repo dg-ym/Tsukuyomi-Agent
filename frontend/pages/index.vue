@@ -8,12 +8,10 @@
     </div>
     <div class="content">
       <div class="center-content">
-        <!-- <h1>太阳西沉，夜晚降临</h1> -->
-        <!-- <p>- 欢迎来到虚拟空间月读 -</p> -->
-		<h1>太陽が沈んで、夜がやってきます</h1>
-		<p>- 仮想空間ツクヨミへようこそ -</p>
+        <h1>欢迎来到洛书</h1>
+        <p>- 你的个性化智能助手 -</p>
         <button class="magic-button" @click="goToMainPage">
-          <span>开启月读之旅</span>
+          <span>进入洛书</span>
         </button>
       </div>
     </div>
@@ -50,7 +48,7 @@ function isTokenValid(token) {
   position: relative;
   height: 100vh;
   overflow: hidden;
-  background: url('@/assets/images/backGround.png') no-repeat center center;
+  background: url('@/assets/images/backGround.jpg') no-repeat center center;
   background-size: cover; /* 这将确保图片覆盖整个区域且不变形 */
 }
 

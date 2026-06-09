@@ -6,7 +6,7 @@
           <div v-for="(message, index) in currentConversation.messages" :key="index" :class="['message', message.role]">
             <div class="avatar">
               <div v-if="message.role !== 'user'" class="ai-avatar">
-                <img src="@/assets/images/hailuo2.png" alt="AI Avatar">
+                <img src="@/assets/images/agent.png" alt="AI Avatar">
               </div>
               <div v-else>
                 <img src="@/assets/images/user.png" alt="Me">
@@ -30,18 +30,7 @@ const historyList = ref([
   {
     title: '',
     messages: [
-      {role: 'assistant', content: '你是谁，看超时空辉夜姬了吗？！！'},
-      {role: 'assistant', content: '快来看超时空辉夜姬。'},
-	  {role: 'assistant', content: '爱看纯爱的请观看超时空辉夜姬。'},
-	  {role: 'assistant', content: '爱看超牛作画的请观看超时空辉夜姬。'},
-	  {role: 'assistant', content: '爱看作曲强的请观看超时空辉夜姬。'},
-	  {role: 'assistant', content: '爱看虚拟主播的请观看超时空辉夜姬。'},
-	  {role: 'assistant', content: '爱看时空穿越的请看超时空辉夜姬。'},
-	  {role: 'assistant', content: '爱看外星人的请观看超时空辉夜姬。'},
-	  {role: 'assistant', content: '爱听术力口的请观看超时空辉夜姬。'},
-	  {role: 'assistant', content: '总之都给我去看超时空辉夜姬。'}
-    ]
-  }
+      {role: 'assistant', content: '功能开发中...'}
 ]);
 const currentConversationIndex = ref(0);
 const currentConversation = computed(() => historyList.value[currentConversationIndex.value]);
